@@ -225,13 +225,18 @@ class MultiFileQuarterlyTransformer:
                         if pd.notna(val):
                             rec['Description'] = str(val)
                     
-                    # Get revenue - CONVERT TO NUMERIC FIRST
+                    # Get revenue - clean to numeric first to avoid str/round issues
                     revenue = 0.0
                     if rev in eq_data.columns:
-                        # Convert to numeric, replacing any non-numeric with 0
-                        revenue_series = pd.to_numeric(eq_data[rev], errors='coerce').fillna(0)
+                        # Normalize to string and strip currency symbols/commas so "1,200" or "$500" work
+                        cleaned = (
+                            eq_data[rev]
+                            .astype(str)
+                            .str.replace('[^0-9.-]', '', regex=True)
+                        )
+                        revenue_series = pd.to_numeric(cleaned, errors='coerce').fillna(0)
                         revenue = float(revenue_series.sum())
-                    
+
                     # Now we can safely round
                     rec[f'{year} Q{qi} Revenue'] = round(revenue, 2)
                 
